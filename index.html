@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>comrade — serverless peer-to-peer terminal sharing</title>
+<meta name="description" content="comrade shares a terminal directly between two machines over a punched peer-to-peer link. No server, no relay.">
+<style>
+  :root {
+    --bg: #0b0e14; --panel: #12161f; --edge: #232a36;
+    --fg: #c9d1d9; --dim: #8b949e; --accent: #7ee787; --accent2: #58a6ff;
+    --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--mono); font-size: 15px; line-height: 1.6;
+  }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  header { text-align: center; }
+  pre.banner {
+    color: var(--accent); font-size: clamp(6px, 1.7vw, 13px); line-height: 1.15;
+    overflow-x: auto; margin: 0 0 .5rem; white-space: pre;
+  }
+  .tag { color: var(--dim); margin: .25rem 0 1.25rem; }
+  .badges { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
+  .badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 6px;
+    padding: .35rem .7rem; color: var(--fg); font-size: 13px;
+  }
+  .badge svg { width: 16px; height: 16px; fill: currentColor; }
+  .badge b { color: var(--accent); font-weight: 600; }
+  section { margin: 2.25rem 0; }
+  h2 { font-size: 1.05rem; color: var(--fg); border-bottom: 1px solid var(--edge); padding-bottom: .4rem; }
+  h2 .n { color: var(--accent); }
+  p { color: var(--dim); }
+  #comrade-demo { border: 1px solid var(--edge); border-radius: 8px; overflow: hidden; background: #000; }
+  pre.code {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    padding: .9rem 1rem; overflow-x: auto; color: var(--fg); margin: .5rem 0;
+  }
+  pre.code .c { color: var(--dim); }
+  pre.code .p { color: var(--accent); }
+  .install-grid { display: grid; gap: 1.25rem; }
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--edge); text-align: center; color: var(--dim); font-size: 13px; }
+  .rule { color: var(--accent); }
+</style>
+<link rel="stylesheet" href="assets/asciinema-player.css">
+</head>
+<body>
+<main>
+  <header>
+    <pre class="banner"> ______ _______ _______ ______ _______ _____  _______
+|      |       |   |   |   __ \   _   |     \|    ___|
+|   ---|   -   |       |      &lt;       |  --  |    ___|
+|______|_______|__|_|__|___|__|___|___|_____/|_______|</pre>
+    <div class="tag">-=[ no server ]=--=[ no relay ]=--=[ just a punched p2p link ]=-</div>
+    <div class="badges">
+      <a class="badge" href="https://github.com/dangowrt/comrade">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span>dangowrt/<b>comrade</b></span>
+      </a>
+      <span class="badge">release <b>__COMRADE_VERSION__</b></span>
+      <span class="badge">license <b>AGPL-3.0</b></span>
+    </div>
+  </header>
+
+  <section>
+    <p><b style="color:var(--fg)">comrade</b> shares your terminal directly with another
+    machine over a hole-punched peer-to-peer link — SSH end-to-end, gated on a one-time
+    token. There is no central server and no relay in the data path: the two ends find each
+    other over the DHT (or the local network) and talk straight to one another.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">$</span> demo</h2>
+    <div id="comrade-demo"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">#</span> install</h2>
+    <div class="install-grid">
+
+      <div>
+        <p><b style="color:var(--fg)">Debian / Ubuntu</b> — signed apt repository</p>
+<pre class="code"><span class="p">sudo</span> install -d -m 0755 /etc/apt/keyrings
+<span class="p">sudo</span> curl -fsSL https://comrade.makrotopia.org/comrade-archive-keyring.asc \
+     -o /etc/apt/keyrings/comrade.asc
+<span class="p">echo</span> "deb [signed-by=/etc/apt/keyrings/comrade.asc] https://comrade.makrotopia.org stable main" \
+   | sudo tee /etc/apt/sources.list.d/comrade.list
+<span class="p">sudo</span> apt update &amp;&amp; sudo apt install comrade   <span class="c"># use "testing" on Debian testing</span></pre>
+      </div>
+
+      <div>
+        <p><b style="color:var(--fg)">macOS</b> — Homebrew</p>
+<pre class="code"><span class="p">brew</span> tap dangowrt/comrade
+<span class="p">brew</span> trust dangowrt/comrade   <span class="c"># Homebrew 4.3+ requires trusting the tap</span>
+<span class="p">brew</span> install comrade          <span class="c"># hosting a session also needs tmux</span></pre>
+      </div>
+
+      <div>
+        <p><b style="color:var(--fg)">Windows</b> — winget or a direct download</p>
+<pre class="code"><span class="p">winget</span> install dangowrt.comrade          <span class="c"># once accepted into winget-pkgs</span>
+<span class="c"># or grab a static exe from the release:</span>
+<span class="c">#   comrade-x64.exe / comrade-arm64.exe</span>
+<span class="c"># hosting a session also needs tmux:  winget install arndawg.tmux-windows</span></pre>
+        <p><a href="https://github.com/dangowrt/comrade/releases/latest">Latest release &amp; binaries →</a></p>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <span class="rule">-=[ no server ]=--=[ no relay ]=-</span><br>
+    <a href="https://github.com/dangowrt/comrade">source</a> ·
+    <a href="https://github.com/dangowrt/comrade/releases/latest">releases</a> ·
+    AGPL-3.0-or-later
+  </footer>
+</main>
+<script src="assets/asciinema-player.min.js"></script>
+<script>
+  AsciinemaPlayer.create('assets/comrade-demo.cast',
+    document.getElementById('comrade-demo'), {
+      autoPlay: true, loop: true, poster: 'npt:0:02',
+      theme: 'asciinema', idleTimeLimit: 2, fit: 'width', controls: 'auto'
+    });
+</script>
+</body>
+</html>
