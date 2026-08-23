@@ -44,6 +44,31 @@ RE_IPV6 = re.compile(
 def plausible_ipv6(m):
     return m.count(':') >= 2 and re.search(r'[0-9A-Fa-f]', m) is not None
 
+
+def repad_status_bar(data, rows, cols):
+    """Restore comrade's status bar to the full terminal width.
+
+    comrade paints the bottom row as one background-coloured line, its text
+    space-padded to the whole width so the colour fills edge to edge:
+    ESC7 ESC[<rows>;1H ESC[<sgr>m <text padded to cols> ESC[0m ESC8. Scrubbing
+    replaces addresses in that text with shorter placeholders, which shortens
+    the line and leaves the colour stopping short of the edge. Re-pad the text
+    back to `cols`; the recovered width becomes trailing padding, exactly where
+    comrade put it, so the addresses stay snug against their ports and only the
+    blank tail grows. Idempotent: a line already at full width is unchanged.
+    """
+    if not rows or not cols:
+        return data
+    pat = re.compile(r'(\x1b\[%d;1H\x1b\[[0-9;]*m)([^\x1b]*)(\x1b\[0m)' % rows)
+
+    def pad(m):
+        bar = m.group(2)
+        if len(bar) >= cols:
+            return m.group(0)
+        return m.group(1) + bar + ' ' * (cols - len(bar)) + m.group(3)
+
+    return pat.sub(pad, data)
+
 DEFAULT_TOKEN_RE = r'\b[1-9A-HJ-NP-Za-km-z]{%d,}\b'
 
 
@@ -101,6 +126,7 @@ def main():
 
     concat = []
     leaks = 0
+    rows = cols = 0
     with open(args.infile, encoding='utf-8') as f:
         for line in f:
             line = line.rstrip('\n')
@@ -109,6 +135,11 @@ def main():
                 continue
             obj = json.loads(line)
             if isinstance(obj, dict):
+                term = obj.get('term')
+                if isinstance(term, dict):		# asciicast v3 header
+                    rows, cols = term.get('rows', 0), term.get('cols', 0)
+                else:					# v2 header
+                    rows, cols = obj.get('height', 0), obj.get('width', 0)
                 if 'title' in obj:
                     obj['title'] = r.scrub(obj['title'])
                 if isinstance(obj.get('env'), dict):
@@ -117,9 +148,13 @@ def main():
             elif isinstance(obj, list) and len(obj) == 3:
                 _t, code, data = obj
                 if code in codes and isinstance(data, str):
-                    obj[2] = r.scrub(data)
+                    data = r.scrub(data)
                     if code == 'o':
-                        concat.append(obj[2])
+                        # A shorter placeholder shrinks the width-padded,
+                        # background-coloured status bar; restore it.
+                        data = repad_status_bar(data, rows, cols)
+                        concat.append(data)
+                    obj[2] = data
             out.write(json.dumps(obj, ensure_ascii=False,
                                  separators=(',', ':')) + '\n')
 
