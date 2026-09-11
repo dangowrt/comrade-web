@@ -64,6 +64,7 @@
       </a>
       <span class="badge">release <b>__COMRADE_VERSION__</b></span>
       <span class="badge">license <b>AGPL-3.0</b></span>
+      <a class="badge" href="https://scan.coverity.com/projects/dangowrt-comrade">coverity <b>scan</b></a>
     </div>
   </header>
 
@@ -150,6 +151,94 @@
       autoPlay: true, loop: true, poster: 'npt:0:02',
       theme: 'asciinema', idleTimeLimit: 2, fit: 'width', controls: 'auto'
     });
+</script>
+<script>
+(function () {
+  var banner = document.querySelector('pre.banner');
+  var text = banner.textContent;
+  var frag = document.createDocumentFragment();
+  var chars = [];
+  var rows = [];
+  var row = [];
+
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i];
+    if (c === '\n') {
+      frag.appendChild(document.createTextNode(c));
+      rows.push(row);
+      row = [];
+      continue;
+    }
+    if (c === ' ') {
+      frag.appendChild(document.createTextNode(c));
+      continue;
+    }
+    var span = document.createElement('span');
+    span.textContent = c;
+    frag.appendChild(span);
+    chars.push(span);
+    row.push(span);
+  }
+  rows.push(row);
+  banner.textContent = '';
+  banner.appendChild(frag);
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  var row_of = new Map();
+  rows.forEach(function (r) {
+    r.forEach(function (s, col) { row_of.set(s, { r: r, col: col }); });
+  });
+
+  var base = getComputedStyle(banner).color.match(/\d+/g).map(Number);
+  var peak = [255, 255, 255];
+  var EDGE_ZONE = 3;
+  var MIX_PEAK = 1;
+  var active = [];
+
+  function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
+
+  function add_active(span, edge) {
+    if (active.some(function (a) { return a.span === span; })) return;
+    active.push({ span: span, start: performance.now(),
+      duration: 900 + Math.random() * 600, edge: edge });
+  }
+
+  function spawn() {
+    var count = 1 + Math.floor(Math.random() * 3);
+    for (var i = 0; i < count; i++) {
+      var span = chars[Math.floor(Math.random() * chars.length)];
+      add_active(span, false);
+
+      var pos = row_of.get(span);
+      if (pos.col < EDGE_ZONE) add_active(pos.r[0], true);
+      if (pos.r.length - 1 - pos.col < EDGE_ZONE) add_active(pos.r[pos.r.length - 1], true);
+    }
+
+    setTimeout(spawn, 120 + Math.random() * 200);
+  }
+
+  function tick(now) {
+    for (var i = active.length - 1; i >= 0; i--) {
+      var a = active[i];
+      var t = (now - a.start) / a.duration;
+      if (t >= 1) {
+        a.span.style.color = '';
+        a.span.style.fontWeight = '';
+        active.splice(i, 1);
+        continue;
+      }
+      var glow = Math.sin(t * Math.PI) * MIX_PEAK;
+      a.span.style.color = 'rgb(' + lerp(base[0], peak[0], glow) + ',' +
+        lerp(base[1], peak[1], glow) + ',' + lerp(base[2], peak[2], glow) + ')';
+      if (a.edge) a.span.style.fontWeight = glow > .25 ? '700' : '';
+    }
+    requestAnimationFrame(tick);
+  }
+
+  spawn();
+  requestAnimationFrame(tick);
+})();
 </script>
 </body>
 </html>
